@@ -317,6 +317,18 @@ O que funciona hoje:
 Ainda **não** existe: os outros cinco chefes, áudio, opções, créditos e final. Depois do desfecho
 o jogador fica numa sala vazia com o coração apagado.
 
+## Repositório
+
+Público em **https://github.com/NykolasMartins/almas-de-titans**, branch `main`.
+
+**`screenshots/` fica fora dele de propósito** (está no `.gitignore`): são capturas do *Titan Souls*
+original, arte de outro estúdio, e num repositório público isso seria redistribuir o trabalho dos
+outros. Elas continuam na máquina de quem desenvolve, e o DESIGN segue citando os caminhos — o
+README avisa que as imagens não estão lá. Não forçar com `git add -f`.
+
+O `package.json` traz `"license": "ISC"`, que é o padrão que o `npm init` escreve sozinho, sem
+`LICENSE` ao lado. Licença é decisão do autor e ainda não foi tomada.
+
 ## Como rodar e verificar
 
 ```bash
