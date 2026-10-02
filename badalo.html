@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sino caído — onde fica o badalo</title>
+    <style>
+      body {
+        margin: 0;
+        background: #14090b;
+        color: #d8d2c8;
+        font: 13px/1.5 monospace;
+        padding: 10px 14px;
+      }
+      h1 {
+        font-size: 15px;
+        margin: 0 0 4px;
+      }
+      p {
+        margin: 0 0 10px;
+        color: #a8988c;
+      }
+      #grade {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      figure {
+        margin: 0;
+      }
+      figcaption {
+        text-align: center;
+        color: #e0a060;
+        padding-top: 2px;
+      }
+      canvas {
+        width: 100%;
+        display: block;
+        image-rendering: pixelated;
+        background: #0b0508;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Sino caído — em cada orientação, qual número está mais perto do badalo?</h1>
+    <p>
+      A seta verde é a direção para onde a boca deveria apontar. O ponto vermelho é onde o jogo
+      põe o badalo hoje. Os números vão de 1 a 100, da esquerda para a direita e de cima para baixo.
+    </p>
+    <div id="grade"></div>
+
+    <script type="module">
+      import { SINO_ART as ART } from './src/tuning.js'
+
+      const N = 10 // grade de 10 x 10 sobre o recorte
+      const SETORES = ['leste', 'sudeste', 'sul', 'sudoeste', 'oeste', 'noroeste', 'norte', 'nordeste']
+
+      const img = new Image()
+      img.src = './assets/sino-caido.png'
+      await img.decode()
+
+      // Caixa de cada quadro, a mesma medida que o jogo usa para ancorar.
+      const medir = () => {
+        const c = document.createElement('canvas')
+        c.width = img.width
+        c.height = img.height
+        const ctx = c.getContext('2d', { willReadFrequently: true })
+        ctx.drawImage(img, 0, 0)
+        const px = ctx.getImageData(0, 0, img.width, img.height).data
+        const caixas = Array.from({ length: ART.frames }, () => ({ x0: 1e9, y0: 1e9, x1: -1, y1: -1 }))
+        for (let i = 3; i < px.length; i += 4) {
+          if (px[i] < 20) continue
+          const p = (i - 3) / 4
+          const gx = p % img.width
+          const gy = (p / img.width) | 0
+          const f = Math.floor(gx / ART.cell) + Math.floor(gy / ART.cell) * ART.cols
+          if (f >= ART.frames) continue
+          const b = caixas[f]
+          const ax = gx % ART.cell
+          const ay = gy % ART.cell
+          if (ax < b.x0) b.x0 = ax
+          if (ax > b.x1) b.x1 = ax
+          if (ay < b.y0) b.y0 = ay
+          if (ay > b.y1) b.y1 = ay
+        }
+        return caixas
+      }
+      const caixas = medir()
+
+      // Recorte igual para todos os painéis: a maior caixa entre os quadros, com
+      // uma folga. Assim a grade tem o mesmo passo em todos, e um número quer
+      // dizer o mesmo deslocamento em qualquer orientação.
+      const maiorL = Math.max(...caixas.map((b) => b.x1 - b.x0 + 1))
+      const maiorA = Math.max(...caixas.map((b) => b.y1 - b.y0 + 1))
+      const SRC_W = Math.round(maiorL * 1.14)
+      const SRC_H = Math.round(maiorA * 1.14)
+      const S = 3.4 // px de tela por px de arte, no desenho do painel
+
+      const grade = document.getElementById('grade')
+      for (let setor = 0; setor < ART.frames; setor++) {
+        const f = ART.fallenFrame[setor]
+        const b = caixas[f]
+        const bcx = (b.x0 + b.x1) / 2
+        const bcy = (b.y0 + b.y1) / 2
+        // Canto do recorte, em px de arte dentro da célula.
+        const rx = bcx - SRC_W / 2
+        const ry = bcy - SRC_H / 2
+
+        const fig = document.createElement('figure')
+        const c = document.createElement('canvas')
+        c.width = SRC_W * S
+        c.height = SRC_H * S
+        fig.appendChild(c)
+        const cap = document.createElement('figcaption')
+        const core = ART.fallenCore[setor]
+        cap.textContent = `${setor}. ${SETORES[setor]} — quadro f${f} — hoje (${core[0]},${core[1]})`
+        fig.appendChild(cap)
+        grade.appendChild(fig)
+
+        const g = c.getContext('2d')
+        g.imageSmoothingEnabled = false
+        g.drawImage(
+          img,
+          (f % ART.cols) * ART.cell + rx,
+          Math.floor(f / ART.cols) * ART.cell + ry,
+          SRC_W,
+          SRC_H,
+          0,
+          0,
+          c.width,
+          c.height,
+        )
+
+        // Do centro da caixa (que é a âncora do sprite no jogo) para o painel.
+        const cx = (bcx - rx) * S
+        const cy = (bcy - ry) * S
+
+        // Seta verde: para onde a boca deveria apontar.
+        const braco = Math.min(c.width, c.height) * 0.44
+        const a = (setor * Math.PI) / 4
+        g.strokeStyle = '#22ff66'
+        g.lineWidth = 5
+        g.beginPath()
+        g.moveTo(cx, cy)
+        g.lineTo(cx + Math.cos(a) * braco, cy + Math.sin(a) * braco)
+        g.stroke()
+        g.fillStyle = '#22ff66'
+        g.beginPath()
+        g.arc(cx + Math.cos(a) * braco, cy + Math.sin(a) * braco, 9, 0, 7)
+        g.fill()
+
+        // Grade numerada, o mesmo passo em todos os painéis.
+        const cw = c.width / N
+        const ch = c.height / N
+        g.lineWidth = 1
+        g.font = `bold ${Math.round(ch * 0.4)}px monospace`
+        g.textAlign = 'center'
+        g.textBaseline = 'middle'
+        for (let r = 0; r < N; r++) {
+          for (let col = 0; col < N; col++) {
+            const n = r * N + col + 1
+            const x = col * cw
+            const y = r * ch
+            g.strokeStyle = 'rgba(255,255,255,0.25)'
+            g.strokeRect(x, y, cw, ch)
+            g.fillStyle = 'rgba(0,0,0,0.6)'
+            g.fillText(n, x + cw / 2 + 1, y + ch / 2 + 1)
+            g.fillStyle = '#ffe9a0'
+            g.fillText(n, x + cw / 2, y + ch / 2)
+          }
+        }
+
+        // Onde o jogo põe o badalo hoje. `fallenCore` está em px de tela do jogo,
+        // então volta para px de arte dividindo pela escala do sprite.
+        g.fillStyle = '#ff2b2b'
+        g.beginPath()
+        g.arc(cx + (core[0] / ART.fallenScale) * S, cy + (core[1] / ART.fallenScale) * S, 10, 0, 7)
+        g.fill()
+        g.lineWidth = 2
+        g.strokeStyle = '#000'
+        g.stroke()
+      }
+    </script>
+  </body>
+</html>

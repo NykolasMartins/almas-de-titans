@@ -1,0 +1,6 @@
+node_modules
+dist
+
+# Capturas do Titan Souls original usadas como referência visual: arte de outro
+# estúdio, que fica só na máquina de quem desenvolve e não vai para o repositório.
+screenshots/
