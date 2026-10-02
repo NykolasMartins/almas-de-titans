@@ -18,10 +18,14 @@ const game = new Phaser.Game({
   pixelArt: true,
   roundPixels: true, // v4 nasce com false; sem isso o sprite treme em sub-pixel
   backgroundColor: COLOR.bg,
+  // **Quem centraliza é o CSS** (`place-items: center` no `index.html`), e só
+  // ele. Com `autoCenter` ligado aqui também, o Phaser punha margem no canvas e
+  // o grid centralizava o canvas **mais a margem**: o jogo ia parar à direita e
+  // embaixo, e quanto maior a tela, mais torto — no painel pequeno de teste a
+  // margem era quase zero e o defeito não aparecia.
   scale: {
     mode: Phaser.Scale.NONE,
     zoom: integerZoom(),
-    autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   input: { gamepad: true },
   // O Phaser abre a primeira da lista. Endereço de luta entra direto no chefe;

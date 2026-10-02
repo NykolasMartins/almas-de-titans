@@ -178,6 +178,10 @@ A v4 reescreveu o renderizador. Tutoriais e respostas de v3 estão desatualizado
 - **Blend aditivo soma a cor da textura, e `setTint` multiplica ela.** Sobre pixel preto os dois
   não fazem nada: nem clareiam, nem pintam. Corpo escuro que precisa virar cinza pede **textura
   própria**, cruzada por alpha — foi o que a pirâmide adormecida custou.
+- **Centralizar é trabalho de um só.** O `index.html` centraliza o canvas por CSS (`display: grid;
+  place-items: center`). Ligar `autoCenter` no Phaser **também** faz ele pôr margem no canvas, e o
+  grid centraliza o canvas mais a margem: o jogo vai parar à direita e embaixo, tanto mais quanto
+  maior a tela. No painel de teste, pequeno, a margem é quase zero e o defeito não aparece.
 - **Efeito contínuo de câmera não pode ser feito rearmando `camera.shake` a cada quadro.** O
   `CameraManager` roda **antes** do `scene.update`: ele calcula o offset, e o `shake(..., force)`
   chamado em seguida zera esse offset logo antes de renderizar. A câmera nunca sai do lugar.
@@ -216,6 +220,11 @@ Quatro regras que já custaram tempo:
    num passo e tirar a captura em outra chamada, senão a imagem contradiz o estado medido — e
    parece bug onde não há. Para segurar a cena parada para a foto: `scene.freeze = 1e7`. Trocar
    `scene.update` **não** funciona: o Phaser guarda a referência no boot e ignora a troca.
+
+9. **O painel é uma tela pequena.** Defeito de layout que cresce com o tamanho da janela (margem,
+   centro, zoom inteiro) some nele. Conferir com `resize_window` no tamanho de um monitor de
+   verdade — 1533×724 é uma tela 1920×1080 com escala de 125% do Windows — e medir pelo
+   `getBoundingClientRect` do canvas: a captura do painel encolhe a página e não serve para isso.
 
 Tecla **`H`** liga os contornos de colisão e o texto de estado em jogo.
 
